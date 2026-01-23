@@ -67,13 +67,13 @@ func (h *Handlers) SyncLibrary(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to access library", http.StatusInternalServerError)
 			return
 		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"synced":           0,
-			"existing":         len(books),
-			"bookstore_error":  "Bookstore unavailable, showing cached library",
+			"synced":          0,
+			"existing":        len(books),
+			"bookstore_error": "Bookstore unavailable, showing cached library",
 		})
 		return
 	}
@@ -88,7 +88,7 @@ func (h *Handlers) SyncLibrary(w http.ResponseWriter, r *http.Request) {
 		if coverURL != "" && !strings.HasPrefix(coverURL, "http") {
 			coverURL = browserBookstoreURL + coverURL
 		}
-		
+
 		book := &models.Book{
 			UserID:      userID,
 			SKU:         p.SKU,

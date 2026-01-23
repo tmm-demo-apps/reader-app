@@ -62,13 +62,13 @@ func (h *Handlers) getUserID(r *http.Request) int {
 // render renders a template with the given data
 func (h *Handlers) render(w http.ResponseWriter, name string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	
+
 	tmpl, ok := h.templates[name]
 	if !ok {
 		http.Error(w, "Template not found: "+name, http.StatusInternalServerError)
 		return
 	}
-	
+
 	// For page templates, execute "base" which includes the page content
 	// For partials, execute the partial directly
 	var err error
@@ -78,7 +78,7 @@ func (h *Handlers) render(w http.ResponseWriter, name string, data interface{}) 
 		// Partials - execute by filename
 		err = tmpl.ExecuteTemplate(w, name, data)
 	}
-	
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

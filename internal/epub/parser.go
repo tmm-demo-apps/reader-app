@@ -169,7 +169,7 @@ func (p *Parser) mapTOCToChapters(toc []models.TOCEntry, chapters []models.Chapt
 		if idx := strings.Index(tocHref, "#"); idx != -1 {
 			tocHref = tocHref[:idx]
 		}
-		
+
 		// Try to find matching chapter
 		if chIdx, ok := hrefToChapter[tocHref]; ok {
 			toc[i].Index = chIdx
@@ -420,10 +420,10 @@ func (p *Parser) readFileContent(zipReader *zip.Reader, filePath string) string 
 			}
 
 			content := string(data)
-			
+
 			// Extract just the body content from HTML/XHTML
 			content = extractBodyContent(content)
-			
+
 			return content
 		}
 	}
@@ -437,32 +437,32 @@ func extractBodyContent(html string) string {
 	if bodyStart == -1 {
 		return html // No body tag, return as-is
 	}
-	
+
 	// Find the end of the opening body tag
 	bodyTagEnd := strings.Index(html[bodyStart:], ">")
 	if bodyTagEnd == -1 {
 		return html
 	}
 	bodyStart = bodyStart + bodyTagEnd + 1
-	
+
 	// Find body end
 	bodyEnd := strings.LastIndex(strings.ToLower(html), "</body>")
 	if bodyEnd == -1 {
 		bodyEnd = len(html)
 	}
-	
+
 	if bodyStart >= bodyEnd {
 		return html
 	}
-	
+
 	content := strings.TrimSpace(html[bodyStart:bodyEnd])
-	
+
 	// Remove elements that reference EPUB internal files (won't resolve in browser)
-	content = removeRelativeImages(content)  // <img> tags
-	content = removeImageTags(content)       // <image> tags (SVG)
-	content = removeSVGTags(content)         // <svg> blocks
-	content = removeLinkTags(content)        // <link> tags (CSS)
-	
+	content = removeRelativeImages(content) // <img> tags
+	content = removeImageTags(content)      // <image> tags (SVG)
+	content = removeSVGTags(content)        // <svg> blocks
+	content = removeLinkTags(content)       // <link> tags (CSS)
+
 	return content
 }
 
@@ -480,7 +480,7 @@ func removeRelativeImages(html string) string {
 			break
 		}
 		imgEnd = imgStart + imgEnd + 1
-		
+
 		// Remove the img tag entirely
 		result = result[:imgStart] + result[imgEnd:]
 	}
@@ -541,7 +541,7 @@ func removeImageTags(html string) string {
 		closeTag := strings.Index(strings.ToLower(result[imgStart:]), "</image>")
 		selfClose := strings.Index(result[imgStart:], "/>")
 		tagEnd := strings.Index(result[imgStart:], ">")
-		
+
 		if closeTag != -1 && (selfClose == -1 || closeTag < selfClose) {
 			// Has closing tag
 			result = result[:imgStart] + result[imgStart+closeTag+8:]

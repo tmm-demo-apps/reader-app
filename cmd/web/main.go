@@ -223,9 +223,9 @@ func parseTemplates() (map[string]*template.Template, error) {
 			return template.JS(b)
 		},
 	}
-	
+
 	templates := make(map[string]*template.Template)
-	
+
 	// Parse each page template with base
 	pages := []string{"login.html", "library.html", "reader.html"}
 	for _, page := range pages {
@@ -238,7 +238,7 @@ func parseTemplates() (map[string]*template.Template, error) {
 		}
 		templates[page] = t
 	}
-	
+
 	// Parse partials separately
 	partials := []string{"partials/toc.html", "partials/chapter.html"}
 	for _, partial := range partials {
@@ -248,6 +248,6 @@ func parseTemplates() (map[string]*template.Template, error) {
 		}
 		templates[partial] = t
 	}
-	
+
 	return templates, nil
 }
