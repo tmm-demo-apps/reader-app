@@ -3,11 +3,21 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
 
 jobs:
+  # Lint runs on GitHub-hosted (fast, no secrets needed)
   lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,64 +45,122 @@ jobs:
       - name: Run golangci-lint
         run: $(go env GOPATH)/bin/golangci-lint run --timeout=5m
 
-  test:
-    runs-on: self-hosted
-    needs: lint
+  # Test and Build runs on self-hosted (has Harbor access) - runs in PARALLEL with lint
+  test-and-build:
+    name: Test and Build
+    runs-on: [self-hosted, linux, harbor]
+    
+    # Use PVC for Go caches (mounted at /mnt/data, separate from Docker)
+    env:
+      GOCACHE: /mnt/data/go-cache
+      GOMODCACHE: /mnt/data/go-mod-cache
+    
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Ensure Go cache directories exist on PVC
+        run: |
+          sudo mkdir -p $GOCACHE $GOMODCACHE
+          sudo chown -R $(whoami):$(whoami) $GOCACHE $GOMODCACHE 2>/dev/null || true
       
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.25'
+          cache: false  # Disable built-in cache, we're using PVC
+      
+      - name: Download dependencies
+        run: go mod download
+      
+      - name: Verify dependencies
+        run: go mod verify
+      
+      - name: Build application
+        run: go build -v -o reader ./cmd/web
       
       - name: Run tests
         run: go test -v ./...
-
-  build:
-    runs-on: self-hosted
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Login to Harbor
-        uses: docker/login-action@v3
-        with:
-          registry: harbor.corp.vmbeans.com
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
-      
-      - name: Generate image tag
-        id: tag
+      # Build Docker image
+      - name: Clean up Docker
         run: |
-          TAG="v$(date +%Y%m%d)-${GITHUB_SHA::7}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Disk usage before cleanup:"
+          df -h /
+          docker system prune -f --filter "until=24h" || true
+          echo "Disk usage after cleanup:"
+          df -h /
       
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: ${{ github.ref == 'refs/heads/main' }}
-          tags: harbor.corp.vmbeans.com/bookstore/reader:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Build Docker image
+        run: |
+          docker build -t reader-app:${{ github.sha }} .
+          docker tag reader-app:${{ github.sha }} reader-app:latest
+          echo "✅ Docker image built: reader-app:${{ github.sha }}"
       
-      - name: Update kustomization.yaml
-        if: github.ref == 'refs/heads/main'
+      # Generate consistent image tag for ArgoCD and Harbor
+      - name: Generate image tag
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: image_tag
+        run: |
+          TAG="v$(date +'%Y%m%d')-${GITHUB_SHA::7}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated image tag: ${TAG}"
+      
+      # Push to Harbor (on main branch only)
+      - name: Login to Harbor
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login ${{ secrets.HARBOR_URL }} -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
+      
+      - name: Push to Harbor
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          docker tag reader-app:${{ github.sha }} ${{ secrets.HARBOR_URL }}/bookstore/reader:${{ steps.image_tag.outputs.tag }}
+          docker tag reader-app:${{ github.sha }} ${{ secrets.HARBOR_URL }}/bookstore/reader:latest
+          
+          echo "Pushing ${{ secrets.HARBOR_URL }}/bookstore/reader:${{ steps.image_tag.outputs.tag }}..."
+          docker push ${{ secrets.HARBOR_URL }}/bookstore/reader:${{ steps.image_tag.outputs.tag }}
+          
+          echo "Pushing ${{ secrets.HARBOR_URL }}/bookstore/reader:latest..."
+          docker push ${{ secrets.HARBOR_URL }}/bookstore/reader:latest
+          
+          echo "✅ Pushed to Harbor: ${{ steps.image_tag.outputs.tag }}"
+      
+      # Update kustomization.yaml for ArgoCD GitOps (only on main branch)
+      - name: Update image tag for ArgoCD
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           cd kubernetes
-          kustomize edit set image reader=harbor.corp.vmbeans.com/bookstore/reader:${{ steps.tag.outputs.tag }}
+          sed -i 's/newTag: .*/newTag: ${{ steps.image_tag.outputs.tag }}/' kustomization.yaml
+          echo "Updated kustomization.yaml:"
+          cat kustomization.yaml
       
-      - name: Commit and push kustomization
-        if: github.ref == 'refs/heads/main'
+      - name: Commit and push kustomization update
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          git config --unset-all http.https://github.com/.extraheader || true
-          git remote set-url origin "https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}.git"
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if git diff --quiet kubernetes/kustomization.yaml; then
+            echo "No changes to kustomization.yaml"
+            exit 0
+          fi
+          
           git add kubernetes/kustomization.yaml
-          git diff --staged --quiet || git commit -m "ci: update image tag to ${{ steps.tag.outputs.tag }}"
+          git commit -m "chore: update reader image to ${{ steps.image_tag.outputs.tag }} [skip ci]"
+          
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://x-access-token:${{ secrets.GIT_PUSH_TOKEN }}@github.com/${{ github.repository }}.git"
           git push origin HEAD:main
+          
+          echo "✅ Pushed kustomization.yaml update"
+      
+      - name: Deployment Summary
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "## 🚀 Build & Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image pushed to Harbor:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ secrets.HARBOR_URL }}/bookstore/reader:${{ steps.image_tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**GitOps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Updated \`kubernetes/kustomization.yaml\` with tag \`${{ steps.image_tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
