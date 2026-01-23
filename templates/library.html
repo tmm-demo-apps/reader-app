@@ -1,0 +1,61 @@
+{{template "base" .}}
+
+{{define "title"}}My Library{{end}}
+
+{{define "content"}}
+<h1>📚 My Library</h1>
+
+{{if .Books}}
+<div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+    {{range .Books}}
+    <article class="book-card">
+        <img src="{{.CoverURL}}" alt="{{.Title}}" class="book-cover" loading="lazy">
+        <header>
+            <strong>{{.Title}}</strong>
+            <small>{{.Author}}</small>
+        </header>
+        <footer>
+            {{if .Progress}}
+                {{if gt .Progress.PositionPercent 0.0}}
+                <progress value="{{.Progress.PositionPercent}}" max="100"></progress>
+                <small>{{printf "%.0f" .Progress.PositionPercent}}% complete</small>
+                {{else}}
+                <small>Not started</small>
+                {{end}}
+            {{else}}
+                <small>Not started</small>
+            {{end}}
+            <a href="/read/{{.SKU}}" role="button" class="read-button">
+                {{if and .Progress (gt .Progress.PositionPercent 0.0)}}
+                Continue Reading
+                {{else}}
+                Start Reading
+                {{end}}
+            </a>
+        </footer>
+    </article>
+    {{end}}
+</div>
+{{else}}
+<article>
+    <header>No books in your library</header>
+    <p>Purchase books from the <a href="http://localhost:8080">Bookstore</a> to start reading!</p>
+    <footer>
+        <a href="http://localhost:8080" role="button">Browse Books</a>
+    </footer>
+</article>
+{{end}}
+
+<hr>
+<details>
+    <summary>Sync Library</summary>
+    <p>If you recently purchased books, sync your library to see them here.</p>
+    <button hx-post="/internal/sync-library" 
+            hx-swap="none"
+            hx-on::after-request="location.reload()">
+        Sync from Bookstore
+    </button>
+</details>
+{{end}}
+
+{{define "scripts"}}{{end}}

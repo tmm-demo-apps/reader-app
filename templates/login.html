@@ -1,0 +1,26 @@
+{{template "base" .}}
+
+{{define "title"}}Login{{end}}
+
+{{define "content"}}
+<article style="max-width: 400px; margin: 2rem auto;">
+    <header>
+        <h2>📚 Library Reader</h2>
+        <p>Sign in to access your book library</p>
+    </header>
+    <form method="POST" action="/login">
+        <p>
+            <small>For demo purposes, click Login to continue as the demo user.</small>
+        </p>
+        <button type="submit">Login</button>
+    </form>
+    <footer>
+        <small>
+            Don't have books yet? 
+            <a href="http://localhost:8080">Visit the Bookstore</a>
+        </small>
+    </footer>
+</article>
+{{end}}
+
+{{define "scripts"}}{{end}}

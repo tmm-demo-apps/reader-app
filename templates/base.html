@@ -1,0 +1,40 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{template "title" .}} - Library Reader</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/css/reader.css">
+</head>
+<body>
+    <header class="container-fluid">
+        <nav>
+            <ul>
+                <li><a href="/library"><strong>📚 My Library</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="http://localhost:8080" target="_blank">Back to Shop</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main class="container">
+        {{template "content" .}}
+    </main>
+    
+    <footer class="container">
+        <small>Library Reader App - Part of the VCF Demo Suite</small>
+    </footer>
+    
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}
+
+{{define "title"}}Reader{{end}}
+{{define "content"}}{{end}}
+{{define "scripts"}}{{end}}

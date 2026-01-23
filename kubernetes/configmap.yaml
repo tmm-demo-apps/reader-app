@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reader-config
+data:
+  PORT: "8081"
+  MINIO_BUCKET: "books-epub"
+  MINIO_USE_SSL: "false"
+  # Bookstore API URL - adjust based on deployment
+  BOOKSTORE_API_URL: "http://bookstore-service.bookstore:8080"

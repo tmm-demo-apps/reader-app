@@ -1,0 +1,283 @@
+/* Reader App Styles */
+
+/* Book Cards in Library */
+.book-card {
+    text-align: center;
+}
+
+.book-cover {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.book-card header {
+    padding: 0.5rem;
+}
+
+.book-card header strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.book-card header small {
+    color: var(--muted-color);
+}
+
+.book-card footer {
+    padding: 0.5rem;
+}
+
+.book-card progress {
+    width: 100%;
+    height: 8px;
+    margin-bottom: 0.25rem;
+}
+
+.read-button {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+/* Reader Container */
+.reader-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 150px);
+    max-width: 100%;
+}
+
+.reader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: var(--card-background-color);
+    border-bottom: 1px solid var(--muted-border-color);
+    gap: 1rem;
+}
+
+.back-link {
+    white-space: nowrap;
+}
+
+.book-title {
+    flex: 1;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chapter-info {
+    white-space: nowrap;
+    color: var(--muted-color);
+}
+
+.reader-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.reader-controls button {
+    padding: 0.25rem 0.5rem;
+    margin: 0;
+    min-width: 40px;
+}
+
+/* Reader Body */
+.reader-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* TOC Sidebar */
+.toc-sidebar {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease;
+    background: var(--card-background-color);
+    border-right: 1px solid var(--muted-border-color);
+}
+
+.toc-sidebar.open {
+    width: 280px;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.toc-sidebar h3 {
+    margin-bottom: 1rem;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-item {
+    padding: 0.25rem 0;
+}
+
+.toc-item a {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.toc-item a:hover {
+    background: var(--secondary-background);
+}
+
+.toc-item.level-2 {
+    padding-left: 1rem;
+}
+
+.toc-item.level-3 {
+    padding-left: 2rem;
+}
+
+/* Chapter Content */
+.chapter-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chapter-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    font-size: 18px;
+    line-height: 1.8;
+}
+
+.chapter-content h1, 
+.chapter-content h2, 
+.chapter-content h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.chapter-content p {
+    margin-bottom: 1rem;
+    text-align: justify;
+}
+
+/* Chapter Navigation */
+.chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--card-background-color);
+    border-top: 1px solid var(--muted-border-color);
+}
+
+.chapter-nav button {
+    margin: 0;
+}
+
+.chapter-indicator {
+    color: var(--muted-color);
+}
+
+/* Reader Footer */
+.reader-footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background: var(--card-background-color);
+    border-top: 1px solid var(--muted-border-color);
+}
+
+.reader-footer progress {
+    flex: 1;
+    height: 8px;
+    margin: 0;
+}
+
+#progress-text {
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: var(--muted-color);
+}
+
+/* Cover Page */
+.cover-page {
+    text-align: center;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--muted-border-color);
+}
+
+.cover-image {
+    max-width: 300px;
+    max-height: 400px;
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.5rem;
+}
+
+.cover-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.cover-author {
+    font-size: 1.25rem;
+    color: var(--muted-color);
+    font-style: italic;
+}
+
+/* Internal EPUB links - make them look clickable but styled differently */
+.chapter-body a {
+    color: var(--primary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.chapter-body a:hover {
+    color: var(--primary-hover);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .reader-header {
+        flex-wrap: wrap;
+    }
+    
+    .book-title {
+        order: -1;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .toc-sidebar.open {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        width: 80%;
+        max-width: 300px;
+    }
+    
+    .chapter-content {
+        padding: 1rem;
+        font-size: 16px;
+    }
+}

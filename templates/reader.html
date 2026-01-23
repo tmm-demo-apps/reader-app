@@ -1,0 +1,161 @@
+{{template "base" .}}
+
+{{define "title"}}{{.Book.Title}}{{end}}
+
+{{define "content"}}
+<div class="reader-container">
+    <!-- Reader Header -->
+    <div class="reader-header">
+        <a href="/library" class="back-link">← Library</a>
+        <span class="book-title">{{.Book.Title}}</span>
+        <span class="chapter-info">Section <span id="current-chapter">{{add .CurrentChapter 1}}</span>/{{.TotalChapters}}</span>
+        <div class="reader-controls">
+            <button onclick="changeFontSize(-2)" title="Decrease font size">A-</button>
+            <button onclick="changeFontSize(2)" title="Increase font size">A+</button>
+            <button onclick="toggleTOC()" title="Table of Contents">☰</button>
+        </div>
+    </div>
+
+    <div class="reader-body">
+        <!-- Table of Contents Sidebar -->
+        <aside id="toc-sidebar" class="toc-sidebar">
+            <h3>Contents</h3>
+            <nav id="toc-list"
+                 hx-get="/read/{{.Book.SKU}}/toc"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                Loading...
+            </nav>
+        </aside>
+
+        <!-- Chapter Content -->
+        <div class="chapter-wrapper">
+            <div id="chapter-content" 
+                 class="chapter-content"
+                 hx-get="/read/{{.Book.SKU}}/chapter/{{.CurrentChapter}}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                Loading chapter...
+            </div>
+
+            <!-- Navigation -->
+            <div class="chapter-nav">
+                <button id="prev-btn" onclick="navigateChapter(-1)" {{if eq .CurrentChapter 0}}disabled{{end}}>
+                    ← Previous
+                </button>
+                <span class="chapter-indicator">Section <span id="chapter-num">{{add .CurrentChapter 1}}</span></span>
+                <button id="next-btn" onclick="navigateChapter(1)" {{if eq .CurrentChapter (sub .TotalChapters 1)}}disabled{{end}}>
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="reader-footer">
+        <progress id="reading-progress" value="{{if .Progress}}{{.Progress.PositionPercent}}{{else}}0{{end}}" max="100"></progress>
+        <span id="progress-text">{{if .Progress}}{{printf "%.0f" .Progress.PositionPercent}}{{else}}0{{end}}% complete</span>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+const bookSKU = "{{.Book.SKU}}";
+const totalChapters = {{.TotalChapters}};
+let currentChapter = {{.CurrentChapter}};
+let saveTimeout;
+
+// Font size adjustment
+function changeFontSize(delta) {
+    const content = document.getElementById('chapter-content');
+    const current = parseFloat(getComputedStyle(content).fontSize);
+    const newSize = Math.max(12, Math.min(32, current + delta));
+    content.style.fontSize = newSize + 'px';
+    localStorage.setItem('reader-font-size', newSize);
+}
+
+// Restore font size on load
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('reader-font-size');
+    if (saved) {
+        document.getElementById('chapter-content').style.fontSize = saved + 'px';
+    }
+});
+
+// TOC toggle
+function toggleTOC() {
+    document.getElementById('toc-sidebar').classList.toggle('open');
+}
+
+// Chapter navigation
+function navigateChapter(delta) {
+    const newChapter = currentChapter + delta;
+    if (newChapter < 0 || newChapter >= totalChapters) return;
+    
+    currentChapter = newChapter;
+    loadChapter(currentChapter);
+}
+
+function loadChapter(index) {
+    htmx.ajax('GET', `/read/${bookSKU}/chapter/${index}`, {
+        target: '#chapter-content',
+        swap: 'innerHTML'
+    });
+    
+    // Update UI (display 1-based section number)
+    document.getElementById('current-chapter').textContent = index + 1;
+    document.getElementById('chapter-num').textContent = index + 1;
+    document.getElementById('prev-btn').disabled = index === 0;
+    document.getElementById('next-btn').disabled = index === totalChapters - 1;
+    
+    // Scroll to top
+    document.getElementById('chapter-content').scrollTop = 0;
+    
+    // Save progress
+    scheduleProgressSave();
+}
+
+// Progress saving
+function scheduleProgressSave() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveProgress, 5000); // Save after 5s of inactivity
+}
+
+function saveProgress() {
+    const content = document.getElementById('chapter-content');
+    const scrollPercent = (content.scrollTop / (content.scrollHeight - content.clientHeight)) * 100 || 0;
+    const chapterPercent = ((currentChapter + (scrollPercent / 100)) / totalChapters) * 100;
+    
+    fetch(`/read/${bookSKU}/progress`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            chapter_index: currentChapter,
+            chapter_href: '',
+            position_percent: chapterPercent,
+            scroll_position: Math.round(content.scrollTop)
+        })
+    });
+    
+    // Update progress bar
+    document.getElementById('reading-progress').value = chapterPercent;
+    document.getElementById('progress-text').textContent = Math.round(chapterPercent) + '% complete';
+}
+
+// Save on scroll
+document.getElementById('chapter-content').addEventListener('scroll', scheduleProgressSave);
+
+// Save when leaving page
+window.addEventListener('beforeunload', saveProgress);
+
+// TOC click handler (delegated)
+document.getElementById('toc-list').addEventListener('click', (e) => {
+    if (e.target.dataset.chapter !== undefined) {
+        loadChapter(parseInt(e.target.dataset.chapter));
+        toggleTOC();
+    }
+});
+</script>
+{{end}}
+

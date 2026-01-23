@@ -1,0 +1,9 @@
+{{define "partials/toc.html"}}
+<ul class="toc-list">
+{{range .TOC}}
+<li class="toc-item level-{{.Level}}">
+    <a href="#" data-chapter="{{.Index}}">{{.Title}}</a>
+</li>
+{{end}}
+</ul>
+{{end}}

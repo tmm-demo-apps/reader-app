@@ -1,0 +1,106 @@
+{{define "partials/chapter.html"}}
+<article class="chapter" data-chapter-index="{{.Chapter.Index}}" data-book-sku="{{.BookSKU}}">
+    {{if .IsCoverPage}}
+    <!-- Cover page: show book cover from bookstore -->
+    <div class="cover-page">
+        {{if .Book.CoverURL}}
+        <img src="{{.Book.CoverURL}}" alt="{{.Book.Title}} cover" class="cover-image">
+        {{end}}
+        <h1 class="cover-title">{{.Book.Title}}</h1>
+        <p class="cover-author">by {{.Book.Author}}</p>
+    </div>
+    {{end}}
+    
+    {{if .Chapter.Title}}
+    <h2>{{.Chapter.Title}}</h2>
+    {{end}}
+    <div class="chapter-body" id="chapter-body-content">
+        {{.Chapter.Content | safeHTML}}
+    </div>
+</article>
+
+<!-- Href to chapter index mapping for internal link navigation -->
+<script>
+(function() {
+    const hrefMap = {{.HrefMap | toJSON}};
+    const bookSKU = "{{.BookSKU}}";
+    const totalChapters = {{.TotalChapters}};
+    
+    // Find all internal links in the chapter content
+    const chapterBody = document.getElementById('chapter-body-content');
+    if (!chapterBody) return;
+    
+    const links = chapterBody.querySelectorAll('a[href]');
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+        
+        // Skip external links
+        if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
+            link.setAttribute('target', '_blank');
+            return;
+        }
+        
+        // Handle internal EPUB links
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Extract the file part (remove fragment)
+            let targetFile = href;
+            let fragment = '';
+            const hashIndex = href.indexOf('#');
+            if (hashIndex !== -1) {
+                targetFile = href.substring(0, hashIndex);
+                fragment = href.substring(hashIndex + 1);
+            }
+            
+            // If it's just a fragment (anchor in current page), scroll to it
+            if (targetFile === '' && fragment) {
+                const target = document.getElementById(fragment);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+                return;
+            }
+            
+            // Find matching chapter by href
+            let targetChapter = -1;
+            for (const [chHref, chIndex] of Object.entries(hrefMap)) {
+                // Try exact match first
+                if (chHref === targetFile) {
+                    targetChapter = chIndex;
+                    break;
+                }
+                // Try suffix match (the href might be relative)
+                if (chHref.endsWith(targetFile) || targetFile.endsWith(chHref)) {
+                    targetChapter = chIndex;
+                    break;
+                }
+                // Try matching just the filename
+                const chFileName = chHref.split('/').pop();
+                const targetFileName = targetFile.split('/').pop();
+                if (chFileName === targetFileName) {
+                    targetChapter = chIndex;
+                    break;
+                }
+            }
+            
+            if (targetChapter >= 0 && targetChapter < totalChapters) {
+                // Use the global loadChapter function from reader.html
+                if (typeof loadChapter === 'function') {
+                    loadChapter(targetChapter);
+                } else {
+                    // Fallback: navigate via htmx
+                    htmx.ajax('GET', `/read/${bookSKU}/chapter/${targetChapter}`, {
+                        target: '#chapter-content',
+                        swap: 'innerHTML'
+                    });
+                }
+            } else {
+                console.log('Could not find chapter for href:', href, 'targetFile:', targetFile);
+            }
+        });
+    });
+})();
+</script>
+{{end}}

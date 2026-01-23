@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+
+  test:
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - name: Run tests
+        run: go test -v ./...
+
+  build:
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Harbor
+        uses: docker/login-action@v3
+        with:
+          registry: harbor.corp.vmbeans.com
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      
+      - name: Generate image tag
+        id: tag
+        run: |
+          TAG="v$(date +%Y%m%d)-${GITHUB_SHA::7}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: harbor.corp.vmbeans.com/bookstore/reader:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Update kustomization.yaml
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd kubernetes
+          kustomize edit set image reader=harbor.corp.vmbeans.com/bookstore/reader:${{ steps.tag.outputs.tag }}
+      
+      - name: Commit and push kustomization
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }}.git"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add kubernetes/kustomization.yaml
+          git diff --staged --quiet || git commit -m "ci: update image tag to ${{ steps.tag.outputs.tag }}"
+          git push origin HEAD:main
