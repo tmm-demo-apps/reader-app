@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -186,7 +187,9 @@ func (h *Handlers) APIBookMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(parsed)
+	if err := json.NewEncoder(w).Encode(parsed); err != nil {
+		log.Printf("Failed to encode book metadata: %v", err)
+	}
 }
 
 // APIGetProgress returns reading progress as JSON
@@ -209,7 +212,9 @@ func (h *Handlers) APIGetProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(progress)
+	if err := json.NewEncoder(w).Encode(progress); err != nil {
+		log.Printf("Failed to encode progress: %v", err)
+	}
 }
 
 // APISaveProgress saves reading progress via JSON API
@@ -236,5 +241,7 @@ func (h *Handlers) APISaveProgress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "saved"})
+	if err := json.NewEncoder(w).Encode(map[string]string{"status": "saved"}); err != nil {
+		log.Printf("Failed to encode save response: %v", err)
+	}
 }

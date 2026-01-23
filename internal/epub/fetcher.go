@@ -102,7 +102,7 @@ func (f *Fetcher) downloadURL(url string) ([]byte, error) {
 
 func (f *Fetcher) updateAccessTime(ctx context.Context, gutenbergID int) {
 	query := `UPDATE epub_cache SET last_accessed_at = $1 WHERE gutenberg_id = $2`
-	f.db.ExecContext(ctx, query, time.Now(), gutenbergID)
+	_, _ = f.db.ExecContext(ctx, query, time.Now(), gutenbergID)
 }
 
 func (f *Fetcher) saveCacheRecord(ctx context.Context, gutenbergID int, bookSKU, minioPath string, size int64) {
@@ -111,7 +111,7 @@ func (f *Fetcher) saveCacheRecord(ctx context.Context, gutenbergID int, bookSKU,
 		VALUES ($1, $2, $3, $4, $5, $5)
 		ON CONFLICT (gutenberg_id) DO UPDATE SET last_accessed_at = EXCLUDED.last_accessed_at
 	`
-	f.db.ExecContext(ctx, query, gutenbergID, bookSKU, minioPath, size, time.Now())
+	_, _ = f.db.ExecContext(ctx, query, gutenbergID, bookSKU, minioPath, size, time.Now())
 }
 
 // GetEPUBReader returns a reader for the EPUB file

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -48,9 +49,11 @@ func (h *Handlers) APILibrary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"books": books,
-	})
+	}); err != nil {
+		log.Printf("Failed to encode library response: %v", err)
+	}
 }
 
 // SyncLibrary syncs the user's library from the Bookstore
@@ -70,11 +73,13 @@ func (h *Handlers) SyncLibrary(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"synced":          0,
 			"existing":        len(books),
 			"bookstore_error": "Bookstore unavailable, showing cached library",
-		})
+		}); err != nil {
+			log.Printf("Failed to encode sync response: %v", err)
+		}
 		return
 	}
 
@@ -107,7 +112,9 @@ func (h *Handlers) SyncLibrary(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"synced": synced,
-	})
+	}); err != nil {
+		log.Printf("Failed to encode sync response: %v", err)
+	}
 }

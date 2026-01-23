@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/sessions"
@@ -13,6 +14,11 @@ import (
 )
 
 const sessionName = "reader_session"
+
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const userIDKey contextKey = "user_id"
 
 // Handlers contains all HTTP handlers
 type Handlers struct {
@@ -92,8 +98,8 @@ func (h *Handlers) RequireAuth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		// Add user ID to context
-		ctx := context.WithValue(r.Context(), "user_id", userID)
+		// Add user ID to context using typed key
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -101,7 +107,7 @@ func (h *Handlers) RequireAuth(next http.Handler) http.Handler {
 // Health handles health check requests
 func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	_, _ = w.Write([]byte("OK"))
 }
 
 // Ready handles readiness check requests
@@ -113,7 +119,7 @@ func (h *Handlers) Ready(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Ready"))
+	_, _ = w.Write([]byte("Ready"))
 }
 
 // Home redirects to library
@@ -135,7 +141,9 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 
 	session := h.getSession(r)
 	session.Values["user_id"] = userID
-	session.Save(r, w)
+	if err := session.Save(r, w); err != nil {
+		log.Printf("Failed to save session: %v", err)
+	}
 
 	http.Redirect(w, r, "/library", http.StatusSeeOther)
 }
@@ -145,7 +153,9 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	session := h.getSession(r)
 	session.Values["user_id"] = nil
 	session.Options.MaxAge = -1
-	session.Save(r, w)
+	if err := session.Save(r, w); err != nil {
+		log.Printf("Failed to save session: %v", err)
+	}
 
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
