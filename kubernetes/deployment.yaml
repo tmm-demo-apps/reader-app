@@ -14,11 +14,23 @@ spec:
       labels:
         app: reader
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: reader
         image: reader
         ports:
         - containerPort: 8081
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: false
         envFrom:
         - configMapRef:
             name: reader-config
