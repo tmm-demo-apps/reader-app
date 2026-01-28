@@ -8,3 +8,5 @@ data:
   MINIO_USE_SSL: "false"
   # Bookstore API URL - adjust based on deployment
   BOOKSTORE_API_URL: "http://bookstore-service.bookstore:8080"
+
+  #test to push the ci
