@@ -88,7 +88,7 @@ See `kubernetes/` directory for manifests.
 kubectl apply -k kubernetes/
 
 # Or use ArgoCD
-argocd app create reader --repo https://github.com/johnnyr0x/reader-app --path kubernetes
+argocd app create reader --repo https://github.com/tmm-demo-apps/reader-app --path kubernetes
 ```
 
 ## Service Dependencies
@@ -120,5 +120,5 @@ The Reader app depends on:
 
 ## Related Projects
 
-- [bookstore-app](https://github.com/johnnyr0x/bookstore-app) - E-commerce bookstore
-- [chatbot-app](https://github.com/johnnyr0x/chatbot-app) - AI support chatbot
+- [bookstore-app](https://github.com/tmm-demo-apps/bookstore-app) - E-commerce bookstore
+- [chatbot-app](https://github.com/tmm-demo-apps/chatbot-app) - AI support chatbot
