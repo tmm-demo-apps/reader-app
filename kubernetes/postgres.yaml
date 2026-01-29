@@ -5,6 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: vsan-default-storage-policy
   resources:
     requests:
       storage: 5Gi
@@ -24,11 +25,23 @@ spec:
       labels:
         app: reader-postgres
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999  # postgres user in alpine
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: postgres
         image: postgres:16-alpine
         ports:
         - containerPort: 5432
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: false
         env:
         - name: POSTGRES_USER
           value: reader
@@ -39,6 +52,8 @@ spec:
               key: postgres-password
         - name: POSTGRES_DB
           value: reader
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgresql/data

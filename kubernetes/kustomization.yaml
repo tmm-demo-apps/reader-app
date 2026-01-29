@@ -6,10 +6,14 @@ namespace: reader
 resources:
   - namespace.yaml
   - configmap.yaml
+  - migrations-configmap.yaml
   - postgres.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  # Note: Redis and MinIO are shared from the bookstore namespace
+  # - redis://redis-service.bookstore.svc.cluster.local:6379
+  # - minio-service.bookstore.svc.cluster.local:9000
 
 images:
   - name: reader

@@ -35,21 +35,17 @@ spec:
         - configMapRef:
             name: reader-config
         env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: reader-secrets
+              key: postgres-password
         - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: reader-secrets
-              key: database-url
+          value: "postgres://reader:$(POSTGRES_PASSWORD)@reader-postgres:5432/reader?sslmode=disable"
         - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: reader-secrets
-              key: redis-url
+          value: "redis://redis-service.bookstore.svc.cluster.local:6379"
         - name: MINIO_ENDPOINT
-          valueFrom:
-            secretKeyRef:
-              name: reader-secrets
-              key: minio-endpoint
+          value: "minio-service.bookstore.svc.cluster.local:9000"
         - name: MINIO_ACCESS_KEY
           valueFrom:
             secretKeyRef:
@@ -60,6 +56,12 @@ spec:
             secretKeyRef:
               name: reader-secrets
               key: minio-secret-key
+        - name: MINIO_BUCKET
+          value: "books-epub"
+        - name: MINIO_USE_SSL
+          value: "false"
+        - name: BOOKSTORE_API_URL
+          value: "http://bookstore-service.bookstore.svc.cluster.local:8080"
         - name: SESSION_SECRET
           valueFrom:
             secretKeyRef:

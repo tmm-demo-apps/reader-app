@@ -32,3 +32,4 @@ data/
 tmp/
 *.tmp
 *.log
+kubernetes/vcf-secrets/
