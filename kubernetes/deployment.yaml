@@ -54,12 +54,6 @@ spec:
             secretKeyRef:
               name: reader-secrets
               key: minio-secret-key
-        - name: MINIO_BUCKET
-          value: "books-epub"
-        - name: MINIO_USE_SSL
-          value: "false"
-        - name: BOOKSTORE_API_URL
-          value: "http://bookstore-service.bookstore.svc.cluster.local:8080"
         - name: SESSION_SECRET
           valueFrom:
             secretKeyRef:

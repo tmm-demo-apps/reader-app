@@ -6,7 +6,5 @@ data:
   PORT: "8081"
   MINIO_BUCKET: "books-epub"
   MINIO_USE_SSL: "false"
-  # Bookstore API URL - adjust based on deployment
-  BOOKSTORE_API_URL: "http://bookstore-service.bookstore:8080"
-
-  #test to push the ci
+  # Cross-namespace service URLs
+  BOOKSTORE_API_URL: "http://bookstore-service.bookstore.svc.cluster.local:8080"
