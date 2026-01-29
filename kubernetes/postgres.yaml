@@ -31,9 +31,11 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
+      imagePullSecrets:
+      - name: harbor-registry-secret
       containers:
       - name: postgres
-        image: postgres:16-alpine
+        image: harbor.corp.vmbeans.com/library/postgres:14-alpine
         ports:
         - containerPort: 5432
         securityContext:
