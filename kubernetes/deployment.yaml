@@ -35,13 +35,11 @@ spec:
         - configMapRef:
             name: reader-config
         env:
-        - name: POSTGRES_PASSWORD
+        - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: reader-secrets
-              key: postgres-password
-        - name: DATABASE_URL
-          value: "postgres://reader:$(POSTGRES_PASSWORD)@reader-postgres:5432/reader?sslmode=disable"
+              key: database-url
         - name: REDIS_URL
           value: "redis://redis-service.bookstore.svc.cluster.local:6379"
         - name: MINIO_ENDPOINT
