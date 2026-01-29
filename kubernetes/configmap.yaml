@@ -6,5 +6,7 @@ data:
   PORT: "8081"
   MINIO_BUCKET: "books-epub"
   MINIO_USE_SSL: "false"
-  # Cross-namespace service URLs
+  # Cross-namespace service URL (for API calls)
   BOOKSTORE_API_URL: "http://bookstore-service.bookstore.svc.cluster.local:8080"
+  # Browser-facing URL (for links shown to users)
+  BOOKSTORE_BROWSER_URL: "http://bookstore.corp.vmbeans.com"

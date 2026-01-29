@@ -85,8 +85,9 @@ func (h *Handlers) SyncLibrary(w http.ResponseWriter, r *http.Request) {
 
 	// Add each purchase to local library
 	synced := 0
-	// Use localhost URL for browser access (not docker internal URL)
-	browserBookstoreURL := "http://localhost:8080"
+	// Use bookstore browser URL for cover images
+	// This should match the URL users access bookstore from (not internal K8s URL)
+	browserBookstoreURL := h.bookstoreClient.BrowserURL()
 	for _, p := range purchases {
 		// Prefix cover URL with bookstore URL if it's a relative path
 		coverURL := p.CoverURL

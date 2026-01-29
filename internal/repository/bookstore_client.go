@@ -10,6 +10,7 @@ import (
 // BookstoreClient communicates with the Bookstore API
 type BookstoreClient struct {
 	baseURL    string
+	browserURL string // URL for browser-facing links (may differ from API URL in K8s)
 	httpClient *http.Client
 }
 
@@ -29,18 +30,28 @@ type PurchasesResponse struct {
 }
 
 // NewBookstoreClient creates a new BookstoreClient
-func NewBookstoreClient(baseURL string) *BookstoreClient {
+// browserURL is the URL users access from their browser (may differ from API URL in K8s)
+func NewBookstoreClient(baseURL, browserURL string) *BookstoreClient {
+	if browserURL == "" {
+		browserURL = baseURL // Default to API URL if not specified
+	}
 	return &BookstoreClient{
-		baseURL: baseURL,
+		baseURL:    baseURL,
+		browserURL: browserURL,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
 }
 
-// BaseURL returns the bookstore base URL
+// BaseURL returns the bookstore base URL (for API calls)
 func (c *BookstoreClient) BaseURL() string {
 	return c.baseURL
+}
+
+// BrowserURL returns the bookstore URL for browser-facing links
+func (c *BookstoreClient) BrowserURL() string {
+	return c.browserURL
 }
 
 // VerifyPurchase checks if a user owns a specific book

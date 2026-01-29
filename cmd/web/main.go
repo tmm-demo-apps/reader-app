@@ -37,6 +37,7 @@ func main() {
 	minioUseSSL := getEnv("MINIO_USE_SSL", "false") == "true"
 	minioBucket := getEnv("MINIO_BUCKET", "books-epub")
 	bookstoreURL := getEnv("BOOKSTORE_API_URL", "http://localhost:8080")
+	bookstoreBrowserURL := getEnv("BOOKSTORE_BROWSER_URL", "") // URL for browser links (defaults to API URL)
 	sessionSecret := getEnv("SESSION_SECRET", "reader-session-secret-change-me")
 
 	// Connect to PostgreSQL
@@ -104,7 +105,7 @@ func main() {
 
 	// Initialize components
 	repo := repository.NewPostgresRepository(db)
-	bookstoreClient := repository.NewBookstoreClient(bookstoreURL)
+	bookstoreClient := repository.NewBookstoreClient(bookstoreURL, bookstoreBrowserURL)
 	epubFetcher := epub.NewFetcher(minioClient, minioBucket, db)
 	epubParser := epub.NewParser(minioClient, minioBucket)
 

@@ -39,9 +39,9 @@
 {{else}}
 <article>
     <header>No books in your library</header>
-    <p>Purchase books from the <a href="http://localhost:8080">Bookstore</a> to start reading!</p>
+    <p>Purchase books from the <a href="{{.BookstoreURL}}">Bookstore</a> to start reading!</p>
     <footer>
-        <a href="http://localhost:8080" role="button">Browse Books</a>
+        <a href="{{.BookstoreURL}}" role="button">Browse Books</a>
     </footer>
 </article>
 {{end}}

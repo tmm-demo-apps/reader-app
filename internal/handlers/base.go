@@ -75,19 +75,39 @@ func (h *Handlers) render(w http.ResponseWriter, name string, data interface{}) 
 		return
 	}
 
+	// Inject common template data (like BookstoreURL)
+	templateData := h.injectCommonData(data)
+
 	// For page templates, execute "base" which includes the page content
 	// For partials, execute the partial directly
 	var err error
 	if name == "login.html" || name == "library.html" || name == "reader.html" {
-		err = tmpl.ExecuteTemplate(w, "base", data)
+		err = tmpl.ExecuteTemplate(w, "base", templateData)
 	} else {
 		// Partials - execute by filename
-		err = tmpl.ExecuteTemplate(w, name, data)
+		err = tmpl.ExecuteTemplate(w, name, templateData)
 	}
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// injectCommonData adds common template data like BookstoreURL
+func (h *Handlers) injectCommonData(data interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	
+	// Copy existing data if it's a map
+	if m, ok := data.(map[string]interface{}); ok {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	
+	// Add common data
+	result["BookstoreURL"] = h.bookstoreClient.BrowserURL()
+	
+	return result
 }
 
 // RequireAuth is middleware that requires authentication
