@@ -1,6 +1,11 @@
 # Reader App
 
+[![CI](https://github.com/tmm-demo-apps/reader-app/workflows/CI/badge.svg)](https://github.com/tmm-demo-apps/reader-app/actions)
+[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
+
 A library reader application that allows users to read books purchased from the Bookstore. Part of the VCF multi-app demo suite.
+
+**Live Endpoint**: http://reader.corp.vmbeans.com
 
 ## Features
 
@@ -81,15 +86,25 @@ docker compose up -d
 
 ## Kubernetes Deployment
 
-See `kubernetes/` directory for manifests.
+The Reader app is deployed to VKS-04 via ArgoCD as part of the `demo-apps` App-of-Apps.
+
+**Production Endpoint**: http://reader.corp.vmbeans.com
 
 ```bash
-# Deploy with kubectl
-kubectl apply -k kubernetes/
+# Check deployment status
+argocd app get reader
 
-# Or use ArgoCD
-argocd app create reader --repo https://github.com/tmm-demo-apps/reader-app --path kubernetes
+# Manual sync if needed
+argocd app sync reader
+
+# Or deploy manually with kubectl
+kubectl apply -k kubernetes/
 ```
+
+The CI pipeline automatically:
+1. Builds and pushes images to Harbor
+2. Updates `kustomization.yaml` with new image tag
+3. ArgoCD auto-syncs the changes to VKS-04
 
 ## Service Dependencies
 
