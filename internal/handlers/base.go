@@ -149,22 +149,39 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 
 // LoginPage renders the login page
 func (h *Handlers) LoginPage(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "login.html", nil)
+	h.render(w, "login.html", map[string]interface{}{})
 }
 
 // Login handles login form submission
 func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
-	// For demo purposes, accept any user ID
-	// In production, validate against Bookstore user database
-	// User 10 has purchases in the test database
-	userID := 10 // Demo user with test purchases
+	email := r.FormValue("email")
+	password := r.FormValue("password")
 
+	if email == "" || password == "" {
+		h.render(w, "login.html", map[string]interface{}{
+			"Error": "Email and password are required",
+		})
+		return
+	}
+
+	// Authenticate against Bookstore API
+	authResp, err := h.bookstoreClient.Authenticate(email, password)
+	if err != nil {
+		log.Printf("Authentication failed for %s: %v", email, err)
+		h.render(w, "login.html", map[string]interface{}{
+			"Error": "Invalid email or password. Please use your Bookstore credentials.",
+		})
+		return
+	}
+
+	// Save user ID to session
 	session := h.getSession(r)
-	session.Values["user_id"] = userID
+	session.Values["user_id"] = authResp.UserID
 	if err := session.Save(r, w); err != nil {
 		log.Printf("Failed to save session: %v", err)
 	}
 
+	log.Printf("User %s (ID: %d) logged in successfully", email, authResp.UserID)
 	http.Redirect(w, r, "/library", http.StatusSeeOther)
 }
 

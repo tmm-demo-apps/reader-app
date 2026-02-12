@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reader-config
+data:
+  # Development browser-facing URL - update for your environment
+  BOOKSTORE_BROWSER_URL: "http://localhost:8080"

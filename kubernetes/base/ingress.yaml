@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: reader.corp.vmbeans.com
+  - host: PLACEHOLDER_HOST  # Patched by overlays
     http:
       paths:
       - path: /

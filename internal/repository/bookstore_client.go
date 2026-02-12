@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -105,4 +106,44 @@ func (c *BookstoreClient) Health() error {
 	}
 
 	return nil
+}
+
+// AuthResponse is the response from the Bookstore auth API
+type AuthResponse struct {
+	UserID int    `json:"user_id"`
+	Email  string `json:"email"`
+}
+
+// Authenticate validates credentials against the Bookstore and returns user info
+func (c *BookstoreClient) Authenticate(email, password string) (*AuthResponse, error) {
+	url := fmt.Sprintf("%s/api/auth", c.baseURL)
+
+	reqBody, err := json.Marshal(map[string]string{
+		"email":    email,
+		"password": password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal auth request: %w", err)
+	}
+
+	resp, err := c.httpClient.Post(url, "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to authenticate: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("authentication failed: status %d", resp.StatusCode)
+	}
+
+	var authResp AuthResponse
+	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
+		return nil, fmt.Errorf("failed to decode auth response: %w", err)
+	}
+
+	return &authResp, nil
 }

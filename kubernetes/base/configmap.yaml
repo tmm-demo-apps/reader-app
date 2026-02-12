@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reader-config
+data:
+  PORT: "8081"
+  MINIO_BUCKET: "books-epub"
+  MINIO_USE_SSL: "false"
+  
+  # Cross-namespace service URLs (for API calls within cluster)
+  BOOKSTORE_API_URL: "http://app-service.bookstore.svc.cluster.local:80"
+  REDIS_URL: "redis://redis-service.bookstore.svc.cluster.local:6379"
+  MINIO_ENDPOINT: "minio-service.bookstore.svc.cluster.local:9000"
+  
+  # Browser-facing URLs (for links shown to users) - patched by overlays
+  BOOKSTORE_BROWSER_URL: "http://localhost:8080"

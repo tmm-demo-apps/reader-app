@@ -40,10 +40,6 @@ spec:
             secretKeyRef:
               name: reader-secrets
               key: database-url
-        - name: REDIS_URL
-          value: "redis://redis-service.bookstore.svc.cluster.local:6379"
-        - name: MINIO_ENDPOINT
-          value: "minio-service.bookstore.svc.cluster.local:9000"
         - name: MINIO_ACCESS_KEY
           valueFrom:
             secretKeyRef:

@@ -15,6 +15,7 @@ services:
       - MINIO_BUCKET=books-epub
       - MINIO_USE_SSL=false
       - BOOKSTORE_API_URL=http://host.docker.internal:8080
+      - BOOKSTORE_BROWSER_URL=http://localhost:8080
       - SESSION_SECRET=dev-session-secret-change-me
     depends_on:
       postgres:

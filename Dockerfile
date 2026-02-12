@@ -3,8 +3,10 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# Install git for go mod download
-RUN apk add --no-cache git
+# Install git for go mod download (use HTTP for apk to avoid TLS issues on corporate networks)
+RUN sed -i 's/https/http/' /etc/apk/repositories && \
+    apk add --no-cache git && \
+    sed -i 's/http/https/' /etc/apk/repositories
 
 # Copy go mod files
 COPY go.mod go.sum* ./
@@ -21,8 +23,10 @@ FROM alpine:3.19
 
 WORKDIR /app
 
-# Install ca-certificates for HTTPS requests
-RUN apk add --no-cache ca-certificates tzdata
+# Install ca-certificates for HTTPS requests (use HTTP for apk to avoid TLS issues on corporate networks)
+RUN sed -i 's/https/http/' /etc/apk/repositories && \
+    apk add --no-cache ca-certificates tzdata && \
+    sed -i 's/http/https/' /etc/apk/repositories
 
 # Copy binary from builder
 COPY --from=builder /app/reader .
