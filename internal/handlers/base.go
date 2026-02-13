@@ -96,17 +96,17 @@ func (h *Handlers) render(w http.ResponseWriter, name string, data interface{}) 
 // injectCommonData adds common template data like BookstoreURL
 func (h *Handlers) injectCommonData(data interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-	
+
 	// Copy existing data if it's a map
 	if m, ok := data.(map[string]interface{}); ok {
 		for k, v := range m {
 			result[k] = v
 		}
 	}
-	
+
 	// Add common data
 	result["BookstoreURL"] = h.bookstoreClient.BrowserURL()
-	
+
 	return result
 }
 

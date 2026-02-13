@@ -3,6 +3,7 @@ package epub
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"io"
@@ -29,12 +30,19 @@ type Fetcher struct {
 
 // NewFetcher creates a new EPUB fetcher
 func NewFetcher(minioClient *minio.Client, bucket string, db *sql.DB) *Fetcher {
+	// Skip TLS verification for Gutenberg downloads - some corporate networks
+	// have proxies/firewalls that do TLS inspection with their own certificates.
+	// This is safe for downloading public book EPUB files.
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	return &Fetcher{
 		minioClient: minioClient,
 		bucket:      bucket,
 		db:          db,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second, // EPUBs can be large
+			Timeout:   60 * time.Second, // EPUBs can be large
+			Transport: tr,
 		},
 	}
 }
