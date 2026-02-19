@@ -2,10 +2,18 @@
 
 [![CI](https://github.com/tmm-demo-apps/reader-app/workflows/CI/badge.svg)](https://github.com/tmm-demo-apps/reader-app/actions)
 [![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go)](https://go.dev/)
+[![GHCR](https://img.shields.io/badge/GHCR-public-blue?logo=github)](https://github.com/orgs/tmm-demo-apps/packages)
 
 A library reader application that allows users to read books purchased from the Bookstore. Part of the VCF multi-app demo suite.
 
-**Live Endpoint**: http://reader.corp.vmbeans.com
+**Endpoint**: `http://reader.<your-domain>` (set via Helm's `global.domain`)
+
+> **Portable Deployment**: This app is included in the [bookstore-app Helm chart](https://github.com/tmm-demo-apps/bookstore-app/tree/main/helm/demo-suite). Deploy the entire suite with:
+> ```bash
+> git clone https://github.com/tmm-demo-apps/bookstore-app.git && cd bookstore-app
+> helm install demo ./helm/demo-suite --set global.domain=<your-domain>
+> ```
+> This deploys bookstore + reader + chatbot. To skip chatbot: add `--set chatbot.enabled=false`.
 
 ## Features
 
@@ -86,9 +94,23 @@ docker compose up -d
 
 ## Kubernetes Deployment
 
+### Helm (Recommended for New Environments)
+
+The Reader is deployed as part of the [demo-suite Helm chart](https://github.com/tmm-demo-apps/bookstore-app/tree/main/helm/demo-suite):
+
+```bash
+# Deploy full suite (includes reader)
+helm install demo ./helm/demo-suite --set global.domain=apps.your-env.com
+
+# Deploy without reader
+helm install demo ./helm/demo-suite --set reader.enabled=false
+```
+
+### ArgoCD (Existing VCF Environment)
+
 The Reader app is deployed to VKS-04 via ArgoCD as part of the `demo-apps` App-of-Apps.
 
-**Production Endpoint**: http://reader.corp.vmbeans.com
+**VCF Production Endpoint**: http://reader.corp.vmbeans.com
 
 ```bash
 # Check deployment status
@@ -102,8 +124,8 @@ kubectl apply -k kubernetes/
 ```
 
 The CI pipeline automatically:
-1. Builds and pushes images to Harbor
-2. Updates `kustomization.yaml` with new image tag
+1. Builds and pushes images to **GHCR** (public) and **Harbor** (enterprise)
+2. Updates `kubernetes/base/kustomization.yaml` with new image tag
 3. ArgoCD auto-syncs the changes to VKS-04
 
 ## Service Dependencies
