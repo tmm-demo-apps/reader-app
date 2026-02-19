@@ -11,9 +11,11 @@ A library reader application that allows users to read books purchased from the 
 > **Portable Deployment**: This app is included in the [bookstore-app Helm chart](https://github.com/tmm-demo-apps/bookstore-app/tree/main/helm/demo-suite). Deploy the entire suite with:
 > ```bash
 > git clone https://github.com/tmm-demo-apps/bookstore-app.git && cd bookstore-app
+> helm dependency update ./helm/demo-suite
 > helm install demo ./helm/demo-suite --set global.domain=<your-domain>
 > ```
 > This deploys bookstore + reader + chatbot. To skip chatbot: add `--set chatbot.enabled=false`.
+> No ingress controller? Add `--set ingress-nginx.enabled=true` to install one automatically.
 
 ## Features
 
