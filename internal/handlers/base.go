@@ -147,8 +147,30 @@ func (h *Handlers) Home(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/library", http.StatusSeeOther)
 }
 
-// LoginPage renders the login page
+// LoginPage renders the login page, or auto-logs in via SSO token
 func (h *Handlers) LoginPage(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token != "" {
+		authResp, err := h.bookstoreClient.VerifyToken(token)
+		if err != nil {
+			log.Printf("Token auth failed: %v", err)
+			h.render(w, "login.html", map[string]interface{}{
+				"Error": "Login link expired. Please log in manually.",
+			})
+			return
+		}
+
+		session := h.getSession(r)
+		session.Values["user_id"] = authResp.UserID
+		if err := session.Save(r, w); err != nil {
+			log.Printf("Failed to save session after token auth: %v", err)
+		}
+
+		log.Printf("User ID %d logged in via SSO token", authResp.UserID)
+		http.Redirect(w, r, "/library", http.StatusSeeOther)
+		return
+	}
+
 	h.render(w, "login.html", map[string]interface{}{})
 }
 

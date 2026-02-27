@@ -114,6 +114,35 @@ type AuthResponse struct {
 	Email  string `json:"email"`
 }
 
+// VerifyToken validates a one-time auth token against the Bookstore
+func (c *BookstoreClient) VerifyToken(token string) (*AuthResponse, error) {
+	url := fmt.Sprintf("%s/api/auth/verify-token", c.baseURL)
+
+	reqBody, err := json.Marshal(map[string]string{
+		"token": token,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal token request: %w", err)
+	}
+
+	resp, err := c.httpClient.Post(url, "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token verification failed: status %d", resp.StatusCode)
+	}
+
+	var authResp AuthResponse
+	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
+		return nil, fmt.Errorf("failed to decode token response: %w", err)
+	}
+
+	return &authResp, nil
+}
+
 // Authenticate validates credentials against the Bookstore and returns user info
 func (c *BookstoreClient) Authenticate(email, password string) (*AuthResponse, error) {
 	url := fmt.Sprintf("%s/api/auth", c.baseURL)
