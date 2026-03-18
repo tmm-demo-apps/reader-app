@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -14,10 +15,10 @@ import (
 )
 
 const (
-	// GutenbergEPUBURL is the URL pattern for downloading EPUB files
-	GutenbergEPUBURL = "https://www.gutenberg.org/ebooks/%d.epub3.images"
-	// Alternative formats if .epub3.images fails
-	GutenbergEPUBFallback = "https://www.gutenberg.org/ebooks/%d.epub.images"
+	// MirrorEPUBURL is the primary URL pattern — EPUB3 with images from the Gutenberg mirror
+	MirrorEPUBURL = "https://aleph.pglaf.org/cache/epub/%d/pg%d-images-3.epub"
+	// MirrorEPUBFallback is the fallback — plain EPUB (no images, smaller)
+	MirrorEPUBFallback = "https://aleph.pglaf.org/cache/epub/%d/pg%d.epub"
 )
 
 // Fetcher handles downloading and caching EPUB files
@@ -30,9 +31,8 @@ type Fetcher struct {
 
 // NewFetcher creates a new EPUB fetcher
 func NewFetcher(minioClient *minio.Client, bucket string, db *sql.DB) *Fetcher {
-	// Skip TLS verification for Gutenberg downloads - some corporate networks
-	// have proxies/firewalls that do TLS inspection with their own certificates.
-	// This is safe for downloading public book EPUB files.
+	// Skip TLS verification — corporate networks often do TLS inspection
+	// with their own certificates, causing verification failures.
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -41,31 +41,29 @@ func NewFetcher(minioClient *minio.Client, bucket string, db *sql.DB) *Fetcher {
 		bucket:      bucket,
 		db:          db,
 		httpClient: &http.Client{
-			Timeout:   60 * time.Second, // EPUBs can be large
+			Timeout:   120 * time.Second,
 			Transport: tr,
 		},
 	}
 }
 
-// EnsureCached ensures an EPUB is available in MinIO, downloading if necessary
+// EnsureCached ensures an EPUB is available in MinIO, downloading from the mirror if necessary
 func (f *Fetcher) EnsureCached(ctx context.Context, gutenbergID int, bookSKU string) (string, error) {
 	minioPath := fmt.Sprintf("%d/pg%d.epub", gutenbergID, gutenbergID)
 
-	// Check if already cached in MinIO
 	_, err := f.minioClient.StatObject(ctx, f.bucket, minioPath, minio.StatObjectOptions{})
 	if err == nil {
-		// Already cached, update access time
 		f.updateAccessTime(ctx, gutenbergID)
 		return minioPath, nil
 	}
 
-	// Not cached, download from Gutenberg
-	data, err := f.downloadFromGutenberg(gutenbergID)
+	log.Printf("EPUB not cached for Gutenberg ID %d (SKU: %s), downloading from mirror...", gutenbergID, bookSKU)
+
+	data, err := f.downloadFromMirror(gutenbergID)
 	if err != nil {
 		return "", fmt.Errorf("failed to download EPUB: %w", err)
 	}
 
-	// Upload to MinIO
 	reader := bytes.NewReader(data)
 	_, err = f.minioClient.PutObject(ctx, f.bucket, minioPath, reader, int64(len(data)), minio.PutObjectOptions{
 		ContentType: "application/epub+zip",
@@ -74,23 +72,21 @@ func (f *Fetcher) EnsureCached(ctx context.Context, gutenbergID int, bookSKU str
 		return "", fmt.Errorf("failed to upload to MinIO: %w", err)
 	}
 
-	// Save cache record
 	f.saveCacheRecord(ctx, gutenbergID, bookSKU, minioPath, int64(len(data)))
+	log.Printf("Cached EPUB for Gutenberg ID %d (%d bytes)", gutenbergID, len(data))
 
 	return minioPath, nil
 }
 
-// downloadFromGutenberg downloads an EPUB from Project Gutenberg
-func (f *Fetcher) downloadFromGutenberg(gutenbergID int) ([]byte, error) {
-	// Try EPUB3 first
-	url := fmt.Sprintf(GutenbergEPUBURL, gutenbergID)
+func (f *Fetcher) downloadFromMirror(gutenbergID int) ([]byte, error) {
+	url := fmt.Sprintf(MirrorEPUBURL, gutenbergID, gutenbergID)
 	data, err := f.downloadURL(url)
 	if err == nil {
 		return data, nil
 	}
 
-	// Fallback to regular EPUB
-	url = fmt.Sprintf(GutenbergEPUBFallback, gutenbergID)
+	log.Printf("Primary mirror URL failed for ID %d, trying fallback: %v", gutenbergID, err)
+	url = fmt.Sprintf(MirrorEPUBFallback, gutenbergID, gutenbergID)
 	return f.downloadURL(url)
 }
 
@@ -102,7 +98,7 @@ func (f *Fetcher) downloadURL(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status %d from %s", resp.StatusCode, url)
 	}
 
 	return io.ReadAll(resp.Body)
