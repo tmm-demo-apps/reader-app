@@ -33,3 +33,6 @@ tmp/
 *.tmp
 *.log
 kubernetes/vcf-secrets/
+
+# Downloaded EPUBs (only needed to rebuild reader-epubs Docker image)
+scripts/epubs/
