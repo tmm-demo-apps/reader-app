@@ -25,6 +25,8 @@ A library reader application that allows users to read books purchased from the 
 - Reading progress tracking
 - Font size adjustment
 - Responsive design
+- On-demand EPUB download from Gutenberg mirror with MinIO caching
+- Optional EPUB pre-seeding via init container for restricted networks
 
 ## Architecture
 
@@ -94,6 +96,45 @@ docker compose up -d
 - `GET /health` - Liveness probe
 - `GET /ready` - Readiness probe
 
+## EPUB Delivery
+
+By default, the reader downloads EPUBs on-demand from the `aleph.pglaf.org` Gutenberg mirror:
+
+```
+User opens book -> Check MinIO cache -> Cache miss -> Download from mirror
+                                                       Try EPUB3-images first
+                                                       Fall back to plain EPUB
+                                     -> Upload to MinIO -> Serve to user
+                                     -> Cache hit -> Serve directly (~40ms)
+```
+
+For restricted networks where pods can't reach external hosts, enable the EPUB seed init container to pre-load all 150 EPUBs into MinIO from a GHCR image:
+
+```bash
+# Via Helm
+helm install demo ./helm/demo-suite \
+  --set global.domain=<your-domain> \
+  --set reader.epubSeed.enabled=true
+
+# Via Kustomize -- add to your overlay's kustomization.yaml:
+# patches:
+#   - path: epub-seed-patch.yaml
+```
+
+The init container (`ghcr.io/tmm-demo-apps/reader-epubs:v1`) runs before the reader starts, uploads any missing EPUBs to MinIO, then exits. It's idempotent -- subsequent pod restarts skip already-cached books.
+
+### Rebuilding the EPUB Seed Image
+
+If you need to update the EPUBs:
+
+```bash
+# 1. Download EPUBs to scripts/epubs/ (gitignored)
+# 2. Rebuild and push (from repo root)
+docker buildx build --platform linux/amd64 \
+  -f scripts/Dockerfile.epubs \
+  -t ghcr.io/tmm-demo-apps/reader-epubs:v1 --push .
+```
+
 ## Kubernetes Deployment
 
 ### Helm (Recommended for New Environments)
@@ -106,6 +147,11 @@ helm install demo ./helm/demo-suite --set global.domain=apps.your-env.com
 
 # Deploy without reader
 helm install demo ./helm/demo-suite --set reader.enabled=false
+
+# Deploy with EPUB pre-seeding (restricted networks)
+helm install demo ./helm/demo-suite \
+  --set global.domain=apps.your-env.com \
+  --set reader.epubSeed.enabled=true
 ```
 
 ### ArgoCD (Existing VCF Environment)
@@ -139,7 +185,8 @@ The Reader app depends on:
    - Required: `GET /api/purchases/{user_id}` and `GET /api/purchases/{user_id}/{sku}`
 
 2. **MinIO** - Stores cached EPUB files
-   - Can share bucket with Bookstore or use dedicated bucket
+   - Bucket: `books-epub` (created automatically by seed container or on first download)
+   - EPUBs cached on first read; subsequent reads served from MinIO
 
 3. **PostgreSQL** - Stores reading progress and library sync
    - Separate database from Bookstore
