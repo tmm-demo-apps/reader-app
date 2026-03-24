@@ -121,7 +121,7 @@ helm install demo ./helm/demo-suite \
 #   - path: epub-seed-patch.yaml
 ```
 
-The init container (`ghcr.io/tmm-demo-apps/reader-epubs:v1`) runs before the reader starts, uploads any missing EPUBs to MinIO, then exits. It's idempotent -- subsequent pod restarts skip already-cached books.
+The init container (`ghcr.io/tmm-demo-apps/reader-epubs:v1`) runs before the reader starts, uploads any missing EPUBs to MinIO, then exits. Subsequent pod restarts skip already-cached books.
 
 ### Rebuilding the EPUB Seed Image
 
