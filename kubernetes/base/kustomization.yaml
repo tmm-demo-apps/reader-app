@@ -15,5 +15,5 @@ resources:
 
 images:
   - name: reader
-    newName: harbor.corp.vmbeans.com/bookstore/reader
+    newName: harbor-01a.vcf.lab/bookstore/reader
     newTag: v20260323-e8c4bed

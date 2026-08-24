@@ -4,7 +4,7 @@ metadata:
   name: reader-ingress
 spec:
   rules:
-  - host: reader.corp.vmbeans.com
+  - host: reader.apps.lab
     http:
       paths:
       - path: /
