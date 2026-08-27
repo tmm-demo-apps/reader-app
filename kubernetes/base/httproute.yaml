@@ -1,0 +1,18 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: reader-route
+spec:
+  parentRefs:
+    - name: demo-gateway
+      namespace: bookstore
+  hostnames:
+    - PLACEHOLDER_HOST  # Patched by overlays
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: reader-service
+          port: 8081

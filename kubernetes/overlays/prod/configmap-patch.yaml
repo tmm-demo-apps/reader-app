@@ -4,4 +4,4 @@ metadata:
   name: reader-config
 data:
   # Production browser-facing URL
-  BOOKSTORE_BROWSER_URL: "http://bookstore.apps.lab"
+  BOOKSTORE_BROWSER_URL: "https://bookstore.apps.lab"

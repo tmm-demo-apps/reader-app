@@ -8,7 +8,7 @@ resources:
   - postgres.yaml
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
+  - httproute.yaml
   # Note: Redis and MinIO are shared from the bookstore namespace
   # - redis://redis-service.bookstore.svc.cluster.local:6379
   # - minio-service.bookstore.svc.cluster.local:9000
